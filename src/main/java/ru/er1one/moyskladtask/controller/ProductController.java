@@ -14,7 +14,6 @@ import ru.er1one.moyskladtask.service.ProductService;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @Setter
 @RestController
@@ -42,11 +41,8 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<?> addProduct(@Valid @RequestBody Product product, BindingResult result) throws ProductValidationException {
         if (result.hasErrors()) {
-            String defaultMessage = Objects.requireNonNull(result.getFieldError()).getDefaultMessage();
-            if (defaultMessage == null) {
-                defaultMessage = "Ошибка валидации";
-            }
-            throw new ProductValidationException(defaultMessage);
+            var message = result.getFieldError() == null ? "Ошибка валидации" : result.getFieldError().getDefaultMessage();
+            throw new ProductValidationException(message);
         }
         Product createdProduct = productService.addProduct(product);
         return new ResponseEntity<>(createdProduct, HttpStatus.CREATED);
