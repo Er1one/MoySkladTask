@@ -1,5 +1,6 @@
 package ru.er1one.moyskladtask.service;
 
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -10,7 +11,9 @@ import ru.er1one.moyskladtask.exception.ProductValidationException;
 import ru.er1one.moyskladtask.model.Product;
 import ru.er1one.moyskladtask.repository.ProductRepository;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,6 +28,9 @@ public class ProductServiceTest {
     @InjectMocks
     private ProductService productService;
 
+    @Mock
+    private Validator validator;
+
     private Product testProduct;
 
     @BeforeEach
@@ -36,6 +42,7 @@ public class ProductServiceTest {
         testProduct.setPrice(100.0);
         testProduct.setDescription("Тестовое описание");
         testProduct.setInStock(false);
+        when(validator.validate(any(Product.class))).thenReturn(Collections.emptySet());
     }
 
     @Test
@@ -49,7 +56,7 @@ public class ProductServiceTest {
 
     @Test
     public void testGetProductById() throws ProductNotFoundException {
-        when(productRepository.findById(anyLong())).thenReturn(testProduct);
+        when(productRepository.findById(anyLong())).thenReturn(Optional.of(testProduct));
 
         Product foundProduct = productService.getProductById(1L);
         assertNotNull(foundProduct);
@@ -85,6 +92,7 @@ public class ProductServiceTest {
     @Test
     public void testAddProductWithInvalidData() throws ProductValidationException {
         Product invalidProduct = new Product();
+        invalidProduct.setName("");
 
         assertThrows(ProductValidationException.class, () -> productService.addProduct(invalidProduct));
     }
@@ -98,7 +106,7 @@ public class ProductServiceTest {
         updatedProduct.setDescription("Обновленное описание");
         updatedProduct.setInStock(true);
 
-        when(productRepository.findById(anyLong())).thenReturn(testProduct);
+        when(productRepository.findById(anyLong())).thenReturn(Optional.of(testProduct));
         when(productRepository.save(any(Product.class))).thenReturn(updatedProduct);
 
         Product result = productService.updateProduct(1L, updatedProduct);
@@ -119,7 +127,7 @@ public class ProductServiceTest {
     public void testUpdateProductWithInvalidData() throws ProductNotFoundException {
         Product invalidProduct = new Product();
 
-        when(productRepository.findById(anyLong())).thenReturn(testProduct);
+        when(productRepository.findById(anyLong())).thenReturn(Optional.of(testProduct));
 
         assertThrows(ProductValidationException.class, () -> productService.updateProduct(1L, invalidProduct));
     }

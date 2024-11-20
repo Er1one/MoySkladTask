@@ -2,21 +2,31 @@ package ru.er1one.moyskladtask.repository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.er1one.moyskladtask.exception.ProductNotFoundException;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import ru.er1one.moyskladtask.Application;
 import ru.er1one.moyskladtask.model.Product;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(classes = Application.class)
+@ExtendWith(SpringExtension.class)
 public class ProductRepositoryTest {
 
+    @Autowired
     private ProductRepository productRepository;
+
     private Product testProduct;
 
     @BeforeEach
     public void setup() {
-        productRepository = new ProductRepository();
+        productRepository.deleteAll();
+
         testProduct = new Product();
         testProduct.setName("Тестовый товар");
         testProduct.setPrice(100.0);
@@ -33,16 +43,17 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testFindById() throws ProductNotFoundException {
+    public void testFindById() {
         Product savedProduct = productRepository.save(testProduct);
-        Product foundProduct = productRepository.findById(savedProduct.getId());
-        assertNotNull(foundProduct);
-        assertEquals(savedProduct.getName(), foundProduct.getName());
+        Optional<Product> foundProduct = productRepository.findById(savedProduct.getId());
+        assertTrue(foundProduct.isPresent());
+        assertEquals(savedProduct.getName(), foundProduct.get().getName());
     }
 
     @Test
     public void testFindByIdNotFound() {
-        assertThrows(ProductNotFoundException.class, () -> productRepository.findById(999L));
+        Optional<Product> foundProduct = productRepository.findById(999L);
+        assertTrue(foundProduct.isEmpty());
     }
 
     @Test
@@ -66,14 +77,15 @@ public class ProductRepositoryTest {
     }
 
     @Test
-    public void testDeleteById() throws ProductNotFoundException {
+    public void testDeleteById() {
         Product savedProduct = productRepository.save(testProduct);
         productRepository.deleteById(savedProduct.getId());
-        assertThrows(ProductNotFoundException.class, () -> productRepository.findById(savedProduct.getId()));
+        Optional<Product> deletedProduct = productRepository.findById(savedProduct.getId());
+        assertTrue(deletedProduct.isEmpty());
     }
 
     @Test
     public void testDeleteByIdNotFound() {
-        assertThrows(ProductNotFoundException.class, () -> productRepository.deleteById(999L));
+        assertDoesNotThrow(() -> productRepository.deleteById(999L));
     }
 }
