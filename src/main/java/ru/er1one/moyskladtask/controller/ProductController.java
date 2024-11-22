@@ -3,6 +3,9 @@ package ru.er1one.moyskladtask.controller;
 import jakarta.validation.Valid;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -29,9 +32,28 @@ public class ProductController {
     }
 
     @GetMapping
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    public List<Product> getAllProducts(
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "priceMin", required = false) Double priceMin,
+            @RequestParam(name = "priceMax", required = false) Double priceMax,
+            @RequestParam(name = "inStock", required = false) Boolean inStock,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortOrder", required = false) String sortOrder,
+            @RequestParam(name = "limit", required = false) Integer limit
+    ) {
+        Sort sort = Sort.by(Sort.Order.asc("id"));
+
+        if (sortField != null && sortOrder != null) {
+            Sort.Direction direction = Sort.Direction.fromString(sortOrder.toUpperCase());
+            sort = Sort.by(new Sort.Order(direction, sortField));
+        }
+
+        Pageable pageable = limit != null ? PageRequest.of(0, limit, sort) : Pageable.unpaged();
+
+        return productService.getAllProducts(name, priceMin, priceMax, inStock, pageable);
     }
+
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable(name = "id") long id) throws ProductNotFoundException {

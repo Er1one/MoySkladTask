@@ -1,11 +1,14 @@
 server:
-  address: 0.0.0.0
-  port: 80
+#  address: 0.0.0.0
+  address: localhost
+#  port: 80
+  port: 8080
 
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://db:5432/products
+#    url: jdbc:postgresql://db:5432/products
+    url: jdbc:postgresql://localhost:5432/products
     username: test
     password: 123
 

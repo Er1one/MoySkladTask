@@ -6,6 +6,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import ru.er1one.moyskladtask.exception.ProductNotFoundException;
 import ru.er1one.moyskladtask.exception.ProductValidationException;
 import ru.er1one.moyskladtask.model.Product;
@@ -47,12 +52,37 @@ public class ProductServiceTest {
 
     @Test
     public void testGetAllProducts() {
-        when(productRepository.findAll()).thenReturn(List.of(testProduct));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(productRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(testProduct)));
 
-        List<Product> products = productService.getAllProducts();
+        List<Product> products = productService.getAllProducts(null, null, null, null, pageable);
         assertEquals(1, products.size());
         assertEquals(testProduct.getName(), products.getFirst().getName());
     }
+
+    @Test
+    public void testGetAllProductsWithFilters() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(productRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(testProduct)));
+
+        List<Product> products = productService.getAllProducts("Тестовый", 50.0, 150.0, true, pageable);
+        assertEquals(1, products.size());
+        assertEquals(testProduct.getName(), products.getFirst().getName());
+    }
+
+    @Test
+    public void testGetAllProductsWithSorting() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("price").ascending());
+        when(productRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(testProduct)));
+
+        List<Product> products = productService.getAllProducts(null, null, null, null, pageable);
+        assertEquals(1, products.size());
+        assertEquals(testProduct.getName(), products.getFirst().getName());
+    }
+
 
     @Test
     public void testGetProductById() throws ProductNotFoundException {

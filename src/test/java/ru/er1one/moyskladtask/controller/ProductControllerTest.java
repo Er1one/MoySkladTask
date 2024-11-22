@@ -1,7 +1,6 @@
 package ru.er1one.moyskladtask.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -18,18 +17,15 @@ import ru.er1one.moyskladtask.service.ProductService;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProductController.class)
-@ContextConfiguration(classes = {
-        ProductController.class,
-        GlobalExceptionHandler.class
-})
+@ContextConfiguration(classes = { ProductController.class, GlobalExceptionHandler.class })
 public class ProductControllerTest {
 
     @MockBean
@@ -55,18 +51,52 @@ public class ProductControllerTest {
 
     @Test
     public void testFindAll() throws Exception {
-        List<Product> products = List.of(testProduct);
+        when(productService.getAllProducts(any(), any(), any(), any(), any())).thenReturn(List.of(testProduct));
 
-        when(productService.getAllProducts()).thenReturn(products);
-
-        mockMvc.perform(get("/api/product"))
+        mockMvc.perform(get("/api/product").param("limit", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", Matchers.hasSize(1)))
-                .andExpect(jsonPath("$[0].id", Matchers.is(1)))
-                .andExpect(jsonPath("$[0].name", Matchers.is("Тестовый товар")))
-                .andExpect(jsonPath("$[0].price", Matchers.is(100.0)))
-                .andExpect(jsonPath("$[0].description", Matchers.is("Тестовое описание")))
-                .andExpect(jsonPath("$[0].inStock", Matchers.is(false)));
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("Тестовый товар"))
+                .andExpect(jsonPath("$[0].price").value(100.0))
+                .andExpect(jsonPath("$[0].description").value("Тестовое описание"))
+                .andExpect(jsonPath("$[0].inStock").value(false));
+    }
+
+    @Test
+    public void testFindAllWithFilters() throws Exception {
+        when(productService.getAllProducts(eq("Тест"), eq(50.0), eq(150.0), eq(true), any())).thenReturn(List.of(testProduct));
+
+        mockMvc.perform(get("/api/product")
+                        .param("name", "Тест")
+                        .param("priceMin", "50.0")
+                        .param("priceMax", "150.0")
+                        .param("inStock", "true")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("Тестовый товар"))
+                .andExpect(jsonPath("$[0].price").value(100.0))
+                .andExpect(jsonPath("$[0].description").value("Тестовое описание"))
+                .andExpect(jsonPath("$[0].inStock").value(false));
+    }
+
+    @Test
+    public void testFindAllWithSorting() throws Exception {
+        when(productService.getAllProducts(any(), any(), any(), any(), any())).thenReturn(List.of(testProduct));
+
+        mockMvc.perform(get("/api/product")
+                        .param("sortField", "price")
+                        .param("sortOrder", "desc")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].name").value("Тестовый товар"))
+                .andExpect(jsonPath("$[0].price").value(100.0))
+                .andExpect(jsonPath("$[0].description").value("Тестовое описание"))
+                .andExpect(jsonPath("$[0].inStock").value(false));
     }
 
     @Test
@@ -75,8 +105,8 @@ public class ProductControllerTest {
 
         mockMvc.perform(get("/api/product/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", Matchers.is(1)))
-                .andExpect(jsonPath("$.name", Matchers.is("Тестовый товар")));
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Тестовый товар"));
     }
 
     @Test
@@ -85,7 +115,7 @@ public class ProductControllerTest {
 
         mockMvc.perform(get("/api/product/999"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message", Matchers.is("Товар не найден")));
+                .andExpect(jsonPath("$.message").value("Товар не найден"));
     }
 
     @Test
@@ -102,8 +132,8 @@ public class ProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newProduct)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name", Matchers.is("Новый товар")))
-                .andExpect(jsonPath("$.price", Matchers.is(200.0)));
+                .andExpect(jsonPath("$.name").value("Новый товар"))
+                .andExpect(jsonPath("$.price").value(200.0));
     }
 
     @Test
@@ -120,7 +150,7 @@ public class ProductControllerTest {
 
         mockMvc.perform(put("/api/product/{id}", productId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(updatedProduct)))
+                        .content(objectMapper.writeValueAsString(updatedProduct)))
                 .andExpect(status().isNoContent());
     }
 
